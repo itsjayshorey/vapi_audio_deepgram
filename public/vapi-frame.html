@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Vapi Iframe</title>
+    <script src="https://unpkg.com/@vapi-ai/web"></script>
+  </head>
+  <body>
+    <script>
+      const vapi = new Vapi('0a6efe0b-b48a-4ed8-bce7-4c78b1f08868', {
+        disableMicrophone: true // ✅ No mic access
+      });
+
+      // Optional: Resume audio context if needed
+      document.addEventListener('click', () => {
+        try {
+          const context = new (window.AudioContext || window.webkitAudioContext)();
+          context.resume();
+        } catch {}
+      });
+
+      // Handle messages from parent
+      window.addEventListener('message', (event) => {
+        const { type, message } = event.data;
+
+        if (type === 'start-call') {
+          vapi.start('f8718dba-7311-49f7-a0c2-056bed097580');
+        } else if (type === 'stop-call') {
+          vapi.stop();
+        } else if (type === 'add-message') {
+          vapi.send({
+            type: 'add-message',
+            message,
+          });
+        }
+      });
+
+      // Send response back to parent to log
+      vapi.on('message', (message) => {
+        if (message.type === 'transcript') {
+          window.parent.postMessage({
+            type: 'transcript',
+            role: message.role === 'user' ? 'You' : 'Assistant',
+            content: message.transcript,
+          }, '*');
+        }
+      });
+    </script>
+  </body>
+</html>
